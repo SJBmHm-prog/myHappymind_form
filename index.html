@@ -1,151 +1,506 @@
-function doPost(e) {
-  try {
-    // Parse the incoming data
-    const data = JSON.parse(e.postData.contents);
-    
-    // Get or create the spreadsheet
-    const spreadsheetId = '1T6ECiFMHjFgv0CF2sz9V-iYjBKoTRbYfvBM3D0wTKIA';
-    const ss = SpreadsheetApp.openById(spreadsheetId);
-    
-    // Always write champion data
-    writeChampionData(ss, data);
-    
-    // Handle different submission types
-    if (data.submissionType === 'pupil-only' || data.submissionType === 'both') {
-      writePupilData(ss, data);
-    }
-    
-    if (data.submissionType === 'staff-only' || data.submissionType === 'both') {
-      writeStaffData(ss, data);
-    }
-    
-    return ContentService
-      .createTextOutput(JSON.stringify({result: 'success'}))
-      .setMimeType(ContentService.MimeType.JSON);
-      
-  } catch (error) {
-    console.error('Error:', error);
-    return ContentService
-      .createTextOutput(JSON.stringify({result: 'error', error: error.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>myHappymind Pupil & Staff Info Form</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-function writeChampionData(ss, data) {
-  // Get or create Champion Data sheet
-  let championSheet = ss.getSheetByName('Champion Data');
-  if (!championSheet) {
-    championSheet = ss.insertSheet('Champion Data');
-    // Add headers
-    championSheet.getRange(1, 1, 1, 7).setValues([[
-      'Timestamp', 'School Name', 'Champion First Name', 'Champion Surname', 
-      'Champion Email', 'Champion Phone', 'Submission Type'
-    ]]);
-    championSheet.getRange(1, 1, 1, 7).setFontWeight('bold');
-  }
-  
-  // Add data row
-  const championData = data.championData;
-  championSheet.appendRow([
-    data.timestamp,
-    championData.schoolName || '',
-    championData.championFirstName || '',
-    championData.championSurname || '',
-    championData.championEmail || '',
-    championData.championPhone || '',
-    data.submissionType || ''
-  ]);
-}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #26D0CE 0%, #1ABC9C 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
 
-function writePupilData(ss, data) {
-  // Get or create Pupil Data sheet
-  let pupilSheet = ss.getSheetByName('Pupil Data');
-  if (!pupilSheet) {
-    pupilSheet = ss.insertSheet('Pupil Data');
-    // Add headers
-    pupilSheet.getRange(1, 1, 1, 9).setValues([[
-      'Timestamp', 'Nursery Classes', 'Nursery Pupils', 'Reception Classes', 
-      'Reception Pupils', 'Years 1-4 Pupils', 'Years 5-6 Pupils', 
-      'Year 6 Pupils', 'Total Classes'
-    ]]);
-    pupilSheet.getRange(1, 1, 1, 9).setFontWeight('bold');
-  }
-  
-  // Add data row
-  const pupilData = data.pupilData;
-  pupilSheet.appendRow([
-    data.timestamp,
-    pupilData.nurseryClasses || '',
-    pupilData.nurseryPupils || '',
-    pupilData.receptionClasses || '',
-    pupilData.receptionPupils || '',
-    pupilData.years1to4 || '',
-    pupilData.years5to6 || '',
-    pupilData.year6 || '',
-    pupilData.totalClasses || ''
-  ]);
-}
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(183, 101, 167, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(247, 220, 111, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(52, 152, 219, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
 
-function writeStaffData(ss, data) {
-  // Get or create Staff Data sheet
-  let staffSheet = ss.getSheetByName('Staff Data');
-  if (!staffSheet) {
-    staffSheet = ss.insertSheet('Staff Data');
-    // Add headers
-    staffSheet.getRange(1, 1, 1, 7).setValues([[
-      'Timestamp', 'First Name', 'Surname', 'Email', 'Job Title', 'Staff Type', 'Other Description'
-    ]]);
-    staffSheet.getRange(1, 1, 1, 7).setFontWeight('bold');
-  }
-  
-  // Add each staff member
-  data.staffData.forEach(staff => {
-    staffSheet.appendRow([
-      data.timestamp,
-      staff.firstName || '',
-      staff.surname || '',
-      staff.email || '',
-      staff.jobTitle || '',
-      staff.staffType || '',
-      staff.otherDescription || ''
-    ]);
-  });
-}
+        .form-container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(38, 208, 206, 0.2);
+            overflow: hidden;
+            position: relative;
+        }
 
-// Test function (optional)
-function testFunction() {
-  const testData = {
-    submissionType: 'both',
-    timestamp: new Date().toISOString(),
-    championData: {
-      schoolName: 'Test Primary School',
-      championFirstName: 'Jane',
-      championSurname: 'Doe',
-      championEmail: 'jane.doe@testschool.ac.uk',
-      championPhone: '01234 567890'
-    },
-    pupilData: {
-      nurseryClasses: '2',
-      nurseryPupils: '30',
-      receptionClasses: '3',
-      receptionPupils: '45',
-      years1to4: '120',
-      years5to6: '60',
-      year6: '30',
-      totalClasses: '8'
-    },
-    staffData: [{
-      firstName: 'John',
-      surname: 'Smith',
-      email: 'john.smith@school.ac.uk',
-      jobTitle: 'Head Teacher',
-      staffType: 'teaching',
-      otherDescription: ''
-    }]
-  };
-  
-  const ss = SpreadsheetApp.openById('1T6ECiFMHjFgv0CF2sz9V-iYjBKoTRbYfvBM3D0wTKIA');
-  writeChampionData(ss, testData);
-  writePupilData(ss, testData);
-  writeStaffData(ss, testData);
-}
+        .form-header {
+            background: linear-gradient(135deg, #26D0CE 0%, #1ABC9C 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .form-header::after {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 100px;
+            height: 100px;
+            background: rgba(247, 220, 111, 0.3);
+            border-radius: 50%;
+        }
+
+        .form-header::before {
+            content: '';
+            position: absolute;
+            bottom: -30px;
+            left: -30px;
+            width: 80px;
+            height: 80px;
+            background: rgba(183, 101, 167, 0.3);
+            border-radius: 50%;
+        }
+
+        .form-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-header p {
+            font-size: 16px;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section {
+            display: none;
+            padding: 40px;
+            position: relative;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, rgba(52, 152, 219, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .section-title {
+            font-size: 24px;
+            color: #2C3E50;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #26D0CE;
+            padding-bottom: 10px;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #B765A7 0%, #F7DC6F 100%);
+        }
+
+        .section-description {
+            color: #34495E;
+            margin-bottom: 30px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .question-group {
+            margin-bottom: 25px;
+        }
+
+        .question-label {
+            display: block;
+            font-weight: 600;
+            color: #2C3E50;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .required {
+            color: #E67E22;
+        }
+
+        input[type="text"], input[type="email"], input[type="number"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #BDC3C7;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #FAFAFA;
+        }
+
+        input[type="text"]:focus, input[type="email"]:focus, input[type="number"]:focus {
+            border-color: #26D0CE;
+            outline: none;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(38, 208, 206, 0.1);
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 2px solid #BDC3C7;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #FAFAFA;
+            position: relative;
+        }
+
+        .radio-option:hover {
+            border-color: #26D0CE;
+            background-color: rgba(38, 208, 206, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .radio-option.selected {
+            border-color: #26D0CE;
+            background: linear-gradient(135deg, rgba(38, 208, 206, 0.1) 0%, rgba(26, 188, 156, 0.1) 100%);
+        }
+
+        .radio-option.selected::before {
+            content: '';
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            background: #26D0CE;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .radio-option.selected::after {
+            content: '✓';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .radio-option input {
+            margin-right: 12px;
+            accent-color: #26D0CE;
+        }
+
+        .radio-option label {
+            cursor: pointer;
+            font-weight: 500;
+            color: #2C3E50;
+        }
+
+        .conditional-field {
+            display: none;
+            margin-top: 15px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(183, 101, 167, 0.05) 0%, rgba(247, 220, 111, 0.05) 100%);
+            border-radius: 12px;
+            border-left: 4px solid #B765A7;
+        }
+
+        .conditional-field.show {
+            display: block;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 140px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #26D0CE 0%, #1ABC9C 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(38, 208, 206, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(38, 208, 206, 0.4);
+            background: linear-gradient(135deg, #1ABC9C 0%, #16A085 100%);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            transform: none;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #95A5A6 0%, #7F8C8D 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(149, 165, 166, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #7F8C8D 0%, #6C7B7D 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(149, 165, 166, 0.4);
+        }
+
+        .staff-member-card {
+            background: linear-gradient(135deg, rgba(247, 220, 111, 0.05) 0%, rgba(52, 152, 219, 0.05) 100%);
+            border: 2px solid #ECF0F1;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .staff-member-card::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 30px;
+            height: 30px;
+            background: rgba(183, 101, 167, 0.2);
+            border-radius: 50%;
+        }
+
+        .staff-member-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2C3E50;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #26D0CE;
+            padding-bottom: 8px;
+            display: inline-block;
+        }
+
+        .confirmation-message {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .confirmation-icon {
+            font-size: 64px;
+            color: #26D0CE;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 10px rgba(38, 208, 206, 0.3);
+        }
+
+        .confirmation-text {
+            font-size: 18px;
+            color: #2C3E50;
+            line-height: 1.6;
+        }
+
+        .confirmation-text h2 {
+            color: #26D0CE;
+            margin-bottom: 15px;
+        }
+
+        .error-message {
+            color: #E67E22;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #ECF0F1;
+            margin-bottom: 0;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #26D0CE 0%, #1ABC9C 30%, #B765A7 60%, #F7DC6F 100%);
+            transition: width 0.5s ease;
+            border-radius: 3px;
+        }
+
+        @media (max-width: 768px) {
+            .form-container {
+                margin: 10px;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <div class="form-header">
+            <h1>myHappymind Pupil & Staff Info Form</h1>
+            <p>Help us set up your school's myHappymind programme</p>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <!-- Section 1: Champion Details -->
+        <section class="section active" id="section1">
+            <h2 class="section-title">School & Champion Details</h2>
+            <p class="section-description">Please provide your school details and champion contact information.</p>
+            
+            <div class="question-group">
+                <label class="question-label" for="school-name">School Name <span class="required">*</span></label>
+                <input type="text" id="school-name" name="school-name" required>
+                <div class="error-message" id="school-name-error">School name is required</div>
+            </div>
+            
+            <div class="staff-member-card">
+                <div class="staff-member-title">myHappymind Champion Details</div>
+                
+                <div class="question-group">
+                    <label class="question-label" for="champion-first-name">Champion First Name <span class="required">*</span></label>
+                    <input type="text" id="champion-first-name" name="champion-first-name" required>
+                    <div class="error-message" id="champion-first-name-error">Champion first name is required</div>
+                </div>
+                
+                <div class="question-group">
+                    <label class="question-label" for="champion-surname">Champion Surname <span class="required">*</span></label>
+                    <input type="text" id="champion-surname" name="champion-surname" required>
+                    <div class="error-message" id="champion-surname-error">Champion surname is required</div>
+                </div>
+                
+                <div class="question-group">
+                    <label class="question-label" for="champion-email">Champion Email Address <span class="required">*</span></label>
+                    <input type="email" id="champion-email" name="champion-email" required>
+                    <div class="error-message" id="champion-email-error">Valid email address is required</div>
+                </div>
+                
+                <div class="question-group">
+                    <label class="question-label" for="champion-phone">Champion Contact Number <span class="required">*</span></label>
+                    <input type="text" id="champion-phone" name="champion-phone" required>
+                    <div class="error-message" id="champion-phone-error">Contact number is required</div>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <div></div>
+                <button class="btn btn-primary" onclick="nextFromChampion()">Continue</button>
+            </div>
+        </section>
+
+        <!-- Section 2: Start Here -->
+        <section class="section" id="section2">
+            <h2 class="section-title">What Would You Like to Submit?</h2>
+            <div class="question-group">
+                <label class="question-label">What would you like to submit today? <span class="required">*</span></label>
+                <div class="radio-group">
+                    <div class="radio-option" onclick="selectOption(this, 'submission-type', 'pupil-only')">
+                        <input type="radio" name="submission-type" value="pupil-only" id="pupil-only">
+                        <label for="pupil-only">Pupil Numbers only</label>
+                    </div>
+                    <div class="radio-option" onclick="selectOption(this, 'submission-type', 'staff-only')">
+                        <input type="radio" name="submission-type" value="staff-only" id="staff-only">
+                        <label for="staff-only">Staff List only</label>
+                    </div>
+                    <div class="radio-option" onclick="selectOption(this, 'submission-type', 'both')">
+                        <input type="radio" name="submission-type" value="both" id="both">
+                        <label for="both">Both</label>
+                    </div>
+                </div>
+                <div class="error-message" id="submission-type-error">Please select an option</div>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToSection(1)">Back</button>
+                <button class="btn btn-primary" onclick="nextFromStart()">Continue</button>
+            </div>
+        </section>
+
+        <!-- Section 3: Pupil Numbers -->
+        <section class="section" id="section3">
+            <h2 class="section-title">Pupil Numbers</h2>
+            <div class="question-group">
+                <label class="question-label" for="nursery-classes">How many nursery classes?</label>
+                <input type="number" id="nursery-classes" name="nursery-classes" min="0">
+            </div>
+            <div class="question-group">
+                <label class="question-label" for="nursery-pupils">How many pupils in nursery?</label>
+                <input type="number" id="nursery-pupils" name="nursery-pupils" min="0">
+            </div>
+            <div class="question-group">
+                <label class="question-label" for="reception-classes">How many reception classes?</label>
+                <input type="number" id="reception-classes" name="reception-classes" min="0">
+            </div>
+            <div class="question-group">
+                <label class="question-label" for="reception-pupils">How many pupils in reception?</label>
+                <input type="number" id="reception-pupils" name="reception-pupils" min="0">
+            </div>
+            <div class="question-group">
+                <label class="question-label" for="years-1-4">Total number of pupils in Years 1–4?</label>
+                <input type="number" id="years-1-4" name="years-1-4" min="0">
+            </div>
+            <div class="question-group">
+                <label class="question-label" for="years-5-6">Total number of pupils in Years 5–6?</label>
+                <input type="number" id="years-5-6" name="years-5-6" min="0">
+            </div>
+            <div class="question-group">
+                <label class="question-label" for="year-6">Number of pupils in Year 6? (for transition)</label>
+                <input type="number" id="year-6" name="year-6" min="0">
+            </div>
+            <div class="question-group">
+                <label class="question-label" for="total-classes">Total number of classes (including nursery if relevant)</label>
+                <input type="number" id=
