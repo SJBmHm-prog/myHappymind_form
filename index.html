@@ -503,4 +503,481 @@
             </div>
             <div class="question-group">
                 <label class="question-label" for="total-classes">Total number of classes (including nursery if relevant)</label>
-                <input type="number" id=
+                <input type="number" id="total-classes" name="total-classes" min="0">
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToSection(2)">Back</button>
+                <button class="btn btn-primary" onclick="nextFromPupils()">Continue</button>
+            </div>
+        </section>
+
+        <!-- Section 4: Staff List -->
+        <section class="section" id="section4">
+            <h2 class="section-title">Staff List</h2>
+            <p class="section-description">Please provide details for each staff member. If you need to submit more than one, the form will loop back and let you add another.</p>
+            
+            <div class="staff-member-card">
+                <div class="staff-member-title">Staff Member <span id="staff-count">1</span></div>
+                
+                <div class="question-group">
+                    <label class="question-label" for="first-name">First Name <span class="required">*</span></label>
+                    <input type="text" id="first-name" name="first-name" required>
+                    <div class="error-message" id="first-name-error">First name is required</div>
+                </div>
+                
+                <div class="question-group">
+                    <label class="question-label" for="surname">Surname <span class="required">*</span></label>
+                    <input type="text" id="surname" name="surname" required>
+                    <div class="error-message" id="surname-error">Surname is required</div>
+                </div>
+                
+                <div class="question-group">
+                    <label class="question-label" for="email">Email Address <span class="required">*</span></label>
+                    <input type="email" id="email" name="email" required>
+                    <div class="error-message" id="email-error">Valid email address is required</div>
+                </div>
+                
+                <div class="question-group">
+                    <label class="question-label" for="job-title">Job Title</label>
+                    <input type="text" id="job-title" name="job-title">
+                </div>
+                
+                <div class="question-group">
+                    <label class="question-label">Staff Type <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <div class="radio-option" onclick="selectOption(this, 'staff-type', 'teaching')">
+                            <input type="radio" name="staff-type" value="teaching" id="teaching">
+                            <label for="teaching">Teaching</label>
+                        </div>
+                        <div class="radio-option" onclick="selectOption(this, 'staff-type', 'non-teaching')">
+                            <input type="radio" name="staff-type" value="non-teaching" id="non-teaching">
+                            <label for="non-teaching">Non-Teaching</label>
+                        </div>
+                        <div class="radio-option" onclick="selectOption(this, 'staff-type', 'both-types')">
+                            <input type="radio" name="staff-type" value="both-types" id="both-types">
+                            <label for="both-types">Both</label>
+                        </div>
+                        <div class="radio-option" onclick="selectOption(this, 'staff-type', 'other-type')">
+                            <input type="radio" name="staff-type" value="other-type" id="other-type">
+                            <label for="other-type">Other</label>
+                        </div>
+                    </div>
+                    <div class="conditional-field" id="other-description-field">
+                        <label class="question-label" for="other-description">If other, please describe</label>
+                        <input type="text" id="other-description" name="other-description">
+                    </div>
+                    <div class="error-message" id="staff-type-error">Please select a staff type</div>
+                </div>
+                
+                <div class="question-group">
+                    <label class="question-label">Would you like to add another staff member?</label>
+                    <div class="radio-group">
+                        <div class="radio-option" onclick="selectOption(this, 'add-another', 'yes')">
+                            <input type="radio" name="add-another" value="yes" id="add-yes">
+                            <label for="add-yes">Yes</label>
+                        </div>
+                        <div class="radio-option" onclick="selectOption(this, 'add-another', 'no')">
+                            <input type="radio" name="add-another" value="no" id="add-no">
+                            <label for="add-no">No</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="backFromStaff()">Back</button>
+                <button class="btn btn-primary" onclick="nextFromStaff()">Continue</button>
+            </div>
+        </section>
+
+        <!-- Section 5: Submit -->
+        <section class="section" id="section5">
+            <div class="confirmation-message">
+                <div class="confirmation-icon">✓</div>
+                <div class="confirmation-text">
+                    <h2>Thanks! You've submitted your staff and/or pupil info.</h2>
+                    <p>We'll be in touch shortly to finalise setup.</p>
+                </div>
+                <div style="margin-top: 30px;">
+                    <button class="btn btn-primary" onclick="submitToGoogleSheets()">Submit to Google Sheets</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let currentSection = 1;
+        let submissionType = '';
+        let staffMembers = [];
+        let currentStaffIndex = 0;
+
+        function updateProgress() {
+            const totalSections = getExpectedSections();
+            const progress = (currentSection / totalSections) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function getExpectedSections() {
+            switch(submissionType) {
+                case 'pupil-only': return 4; // Champion, Start, Pupils, Submit
+                case 'staff-only': return 4; // Champion, Start, Staff, Submit
+                case 'both': return 5; // Champion, Start, Pupils, Staff, Submit
+                default: return 5;
+            }
+        }
+
+        function selectOption(element, name, value) {
+            // Remove selected class from all options in this group
+            const group = element.parentNode;
+            group.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
+            
+            // Add selected class to clicked option
+            element.classList.add('selected');
+            
+            // Set the radio button
+            element.querySelector('input').checked = true;
+            
+            // Hide error message
+            const errorElement = document.getElementById(name + '-error');
+            if (errorElement) {
+                errorElement.style.display = 'none';
+            }
+            
+            // Handle conditional fields
+            if (name === 'staff-type') {
+                const otherField = document.getElementById('other-description-field');
+                if (value === 'other-type') {
+                    otherField.classList.add('show');
+                } else {
+                    otherField.classList.remove('show');
+                }
+            }
+        }
+
+        function goToSection(sectionNumber) {
+            // Hide current section
+            document.getElementById('section' + currentSection).classList.remove('active');
+            
+            // Show target section
+            currentSection = sectionNumber;
+            document.getElementById('section' + currentSection).classList.add('active');
+            
+            updateProgress();
+        }
+
+        function validateChampionForm() {
+            let valid = true;
+            console.log('Starting validation...'); // Debug log
+            
+            // Check school name
+            const schoolName = document.getElementById('school-name').value.trim();
+            console.log('School name:', schoolName); // Debug log
+            if (!schoolName) {
+                document.getElementById('school-name-error').style.display = 'block';
+                valid = false;
+                console.log('School name validation failed');
+            } else {
+                document.getElementById('school-name-error').style.display = 'none';
+            }
+            
+            // Check champion first name
+            const championFirstName = document.getElementById('champion-first-name').value.trim();
+            console.log('Champion first name:', championFirstName); // Debug log
+            if (!championFirstName) {
+                document.getElementById('champion-first-name-error').style.display = 'block';
+                valid = false;
+                console.log('Champion first name validation failed');
+            } else {
+                document.getElementById('champion-first-name-error').style.display = 'none';
+            }
+            
+            // Check champion surname
+            const championSurname = document.getElementById('champion-surname').value.trim();
+            console.log('Champion surname:', championSurname); // Debug log
+            if (!championSurname) {
+                document.getElementById('champion-surname-error').style.display = 'block';
+                valid = false;
+                console.log('Champion surname validation failed');
+            } else {
+                document.getElementById('champion-surname-error').style.display = 'none';
+            }
+            
+            // Check champion email
+            const championEmail = document.getElementById('champion-email').value.trim();
+            console.log('Champion email:', championEmail); // Debug log
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!championEmail || !emailRegex.test(championEmail)) {
+                document.getElementById('champion-email-error').style.display = 'block';
+                valid = false;
+                console.log('Champion email validation failed');
+            } else {
+                document.getElementById('champion-email-error').style.display = 'none';
+            }
+            
+            // Check champion phone
+            const championPhone = document.getElementById('champion-phone').value.trim();
+            console.log('Champion phone:', championPhone); // Debug log
+            if (!championPhone) {
+                document.getElementById('champion-phone-error').style.display = 'block';
+                valid = false;
+                console.log('Champion phone validation failed');
+            } else {
+                document.getElementById('champion-phone-error').style.display = 'none';
+            }
+            
+            console.log('Validation result:', valid); // Debug log
+            return valid;
+        }
+
+        function nextFromChampion() {
+            console.log('Continue button clicked'); // Debug log
+            
+            // Add visual feedback
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = 'Checking...';
+            button.disabled = true;
+            
+            // Small delay to show the feedback
+            setTimeout(() => {
+                if (!validateChampionForm()) {
+                    console.log('Validation failed'); // Debug log
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    return;
+                }
+                
+                console.log('Validation passed, moving to section 2'); // Debug log
+                button.textContent = originalText;
+                button.disabled = false;
+                goToSection(2);
+            }, 100);
+        }
+
+        function nextFromStart() {
+            const selectedType = document.querySelector('input[name="submission-type"]:checked');
+            
+            if (!selectedType) {
+                document.getElementById('submission-type-error').style.display = 'block';
+                return;
+            }
+            
+            submissionType = selectedType.value;
+            
+            switch(submissionType) {
+                case 'pupil-only':
+                    goToSection(3);
+                    break;
+                case 'staff-only':
+                    goToSection(4);
+                    break;
+                case 'both':
+                    goToSection(3);
+                    break;
+            }
+        }
+
+        function nextFromPupils() {
+            if (submissionType === 'both') {
+                goToSection(4);
+            } else {
+                goToSection(5);
+            }
+        }
+
+        function backFromStaff() {
+            if (submissionType === 'both') {
+                goToSection(3);
+            } else {
+                goToSection(2);
+            }
+        }
+
+        function validateStaffForm() {
+            let valid = true;
+            
+            // Check first name
+            const firstName = document.getElementById('first-name').value.trim();
+            if (!firstName) {
+                document.getElementById('first-name-error').style.display = 'block';
+                valid = false;
+            } else {
+                document.getElementById('first-name-error').style.display = 'none';
+            }
+            
+            // Check surname
+            const surname = document.getElementById('surname').value.trim();
+            if (!surname) {
+                document.getElementById('surname-error').style.display = 'block';
+                valid = false;
+            } else {
+                document.getElementById('surname-error').style.display = 'none';
+            }
+            
+            // Check email
+            const email = document.getElementById('email').value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!email || !emailRegex.test(email)) {
+                document.getElementById('email-error').style.display = 'block';
+                valid = false;
+            } else {
+                document.getElementById('email-error').style.display = 'none';
+            }
+            
+            // Check staff type
+            const staffType = document.querySelector('input[name="staff-type"]:checked');
+            if (!staffType) {
+                document.getElementById('staff-type-error').style.display = 'block';
+                valid = false;
+            } else {
+                document.getElementById('staff-type-error').style.display = 'none';
+            }
+            
+            return valid;
+        }
+
+        function collectStaffData() {
+            return {
+                firstName: document.getElementById('first-name').value.trim(),
+                surname: document.getElementById('surname').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                jobTitle: document.getElementById('job-title').value.trim(),
+                staffType: document.querySelector('input[name="staff-type"]:checked')?.value || '',
+                otherDescription: document.getElementById('other-description').value.trim()
+            };
+        }
+
+        function clearStaffForm() {
+            document.getElementById('first-name').value = '';
+            document.getElementById('surname').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('job-title').value = '';
+            document.getElementById('other-description').value = '';
+            
+            // Clear radio selections
+            document.querySelectorAll('input[name="staff-type"]').forEach(input => input.checked = false);
+            document.querySelectorAll('input[name="add-another"]').forEach(input => input.checked = false);
+            document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
+            
+            // Hide conditional field
+            document.getElementById('other-description-field').classList.remove('show');
+        }
+
+        function nextFromStaff() {
+            if (!validateStaffForm()) {
+                return;
+            }
+            
+            // Collect current staff data
+            const staffData = collectStaffData();
+            staffMembers.push(staffData);
+            
+            // Check if they want to add another
+            const addAnother = document.querySelector('input[name="add-another"]:checked');
+            
+            if (addAnother && addAnother.value === 'yes') {
+                // Clear form for next staff member
+                clearStaffForm();
+                currentStaffIndex++;
+                document.getElementById('staff-count').textContent = currentStaffIndex + 1;
+            } else {
+                // Go to submit section
+                goToSection(5);
+            }
+        }
+
+        function collectChampionData() {
+            return {
+                schoolName: document.getElementById('school-name').value.trim(),
+                championFirstName: document.getElementById('champion-first-name').value.trim(),
+                championSurname: document.getElementById('champion-surname').value.trim(),
+                championEmail: document.getElementById('champion-email').value.trim(),
+                championPhone: document.getElementById('champion-phone').value.trim()
+            };
+        }
+
+        function collectPupilData() {
+            return {
+                nurseryClasses: document.getElementById('nursery-classes').value,
+                nurseryPupils: document.getElementById('nursery-pupils').value,
+                receptionClasses: document.getElementById('reception-classes').value,
+                receptionPupils: document.getElementById('reception-pupils').value,
+                years1to4: document.getElementById('years-1-4').value,
+                years5to6: document.getElementById('years-5-6').value,
+                year6: document.getElementById('year-6').value,
+                totalClasses: document.getElementById('total-classes').value
+            };
+        }
+
+        // Google Apps Script web app URL
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTWc-GKV8e1s_XWtAaN2cPtiyoDvbCDBE4vEB5VDTzZJXffOVdXH656-Vg5fz7gXnM/exec';
+
+        function submitToGoogleSheets() {
+            const submitButton = document.querySelector('#section5 .btn-primary');
+            const originalText = submitButton.textContent;
+            
+            submitButton.textContent = 'Submitting...';
+            submitButton.disabled = true;
+            
+            const data = {
+                submissionType: submissionType,
+                timestamp: new Date().toISOString(),
+                championData: collectChampionData(),
+                pupilData: (submissionType === 'pupil-only' || submissionType === 'both') ? collectPupilData() : null,
+                staffData: (submissionType === 'staff-only' || submissionType === 'both') ? staffMembers : null
+            };
+            
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(() => {
+                submitButton.textContent = 'Submitted Successfully!';
+                submitButton.style.background = '#28a745';
+                
+                // Also provide download option
+                setTimeout(() => {
+                    submitButton.textContent = 'Download Copy';
+                    submitButton.disabled = false;
+                    submitButton.onclick = downloadData;
+                }, 2000);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                submitButton.textContent = 'Submission Error - Click to Download';
+                submitButton.disabled = false;
+                submitButton.onclick = downloadData;
+            });
+        }
+
+        function downloadData() {
+            const data = {
+                submissionType: submissionType,
+                timestamp: new Date().toISOString(),
+                championData: collectChampionData(),
+                pupilData: (submissionType === 'pupil-only' || submissionType === 'both') ? collectPupilData() : null,
+                staffData: (submissionType === 'staff-only' || submissionType === 'both') ? staffMembers : null
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'myhappymind-form-data.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialize progress bar
+        updateProgress();
+    </script>
+</body>
+</html>
