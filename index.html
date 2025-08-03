@@ -910,7 +910,7 @@
         }
 
         // Google Apps Script web app URL
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTWc-GKV8e1s_XWtAaN2cPtiyoDvbCDBE4vEB5VDTzZJXffOVdXH656-Vg5fz7gXnM/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/182xeeByUPp0wqWB5DqoQlVWe_yJMIQzdAl1qUQZuMq0KIViyxuHxoWpS/exec';
 
         function submitToGoogleSheets() {
             const submitButton = document.querySelector('#section5 .btn-primary');
@@ -919,13 +919,28 @@
             submitButton.textContent = 'Submitting...';
             submitButton.disabled = true;
             
+            // Collect all data
+            const championData = collectChampionData();
+            const pupilData = (submissionType === 'pupil-only' || submissionType === 'both') ? collectPupilData() : null;
+            const staffData = (submissionType === 'staff-only' || submissionType === 'both') ? staffMembers : null;
+            
             const data = {
                 submissionType: submissionType,
                 timestamp: new Date().toISOString(),
-                championData: collectChampionData(),
-                pupilData: (submissionType === 'pupil-only' || submissionType === 'both') ? collectPupilData() : null,
-                staffData: (submissionType === 'staff-only' || submissionType === 'both') ? staffMembers : null
+                championData: championData,
+                pupilData: pupilData,
+                staffData: staffData
             };
+            
+            // Debug logging - check what data we're collecting
+            console.log('=== FORM SUBMISSION DEBUG ===');
+            console.log('Submission Type:', submissionType);
+            console.log('Champion Data:', championData);
+            console.log('Pupil Data:', pupilData);
+            console.log('Staff Data:', staffData);
+            console.log('Full Data Object:', data);
+            console.log('JSON to send:', JSON.stringify(data, null, 2));
+            console.log('=== END DEBUG ===');
             
             fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
